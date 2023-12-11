@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <title>Αποτελέσματα Αναζήτησης</title>
+</head>
+<body>
+    <h1>Αποτελέσματα Αναζήτησης</h1>
+    {% if results %}
+        <ul>
+            {% for result in results %}
+                <li>
+                    <h2>{{ result['title'] }}</h2>
+                    <p>Συγγραφέας: {{ result['author'] }}</p>
+                    <p>Ημερομηνία: {{ result['date'] }}</p>
+                    <p>Περίληψη: {{ result['abstract'] }}</p>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Δεν βρέθηκαν αποτελέσματα.</p>
+    {% endif %}
+</body>
+</html>

@@ -1,4 +1,5 @@
 # Βιβλιοθήκες
+import math
 import requests
 from flask import Flask, request, render_template
 from bs4 import BeautifulSoup
@@ -20,14 +21,15 @@ from sklearn.metrics.pairwise import cosine_similarity
 from rank_bm25 import BM25Okapi
 import string
 import numpy as np
-from collections import defaultdict
 
 
 # Ερώτημα 1
+# a Επιλέξτε έναν ιστότοπο-στόχο ή ένα αποθετήριο ακαδημαϊκών εργασιών (π.χ. arXiv, PubMed ή αποθετήριο πανεπιστημίου). 
 url = 'https://polynoe.lib.uniwa.gr/xmlui/browse?type=dateissued'
 html = requests.get(url)
 soup = BeautifulSoup(html.content, 'html.parser')
 
+# β. Υλοποιήστε έναν web crawler σε Python (π.χ. με BeautifulSoup) για τη συλλογή μεταδεδομένων ακαδημαϊκών εργασιών (τίτλος, συγγραφείς, περίληψη, ημερομηνία δημοσίευσης κ.λπ.) από την επιλεγμένη πηγή.
 # Βρείτε όλα τα divs με την κλάση 'artifact-description'
 descriptions = soup.find_all('div', class_='artifact-description')
 
@@ -43,11 +45,13 @@ for desc in descriptions:
     data.append([title, author, date, abstract])
 
 # Αποθήκευση των δεδομένων σε μορφή JSON
+# γ. Αποθηκεύστε τα δεδομένα που συλλέγονται σε δομημένη μορφή, όπως JSON ή CSV.
 with open('data.json', 'w', encoding='utf8') as f:
     json.dump(data, f, ensure_ascii=False)
 
 
 # Ερώτημα 2
+# Κάντε προεπεξεργασία του κειμενικού περιεχομένου των ακαδημαϊκών εργασιών για την προετοιμασία τους για ευρετηρίαση και αναζήτηση. Αυτό μπορεί να περιλαμβάνει εργασίες όπως tokenization, stemming/lemmatization και stop-word removal και αφαίρεση ειδικών χαρακτήρων (removing special characters).
 # Φορτώστε τις stop words
 stop_words = set(stopwords.words('greek'))
 
@@ -82,6 +86,7 @@ with open('processed_data.json', 'w', encoding='utf8') as f:
     json.dump(processed_data, f, ensure_ascii=False)
 
 # Ερώτημα 3
+# α. Δημιουργήστε μια ανεστραμμένη δομή δεδομένων ευρετηρίου (inverted index) για την αποτελεσματική αντιστοίχιση όρων στα έγγραφα στα οποία εμφανίζονται. 
 # Δημιουργία ενός ανεστραμμένου ευρετηρίου
 inverted_index = defaultdict(set)
 
@@ -96,89 +101,95 @@ for i, entry in enumerate(processed_data):
 # Convert the sets to lists
 inverted_index = {k: list(v) for k, v in inverted_index.items()}
 
+# β Εφαρμόστε μια δομή δεδομένων για την αποθήκευση της αντιστοίχισης μεταξύ λέξεων κλειδιών (keywords) και εγγράφων.
 # Αποθήκευση του ανεστραμμένου ευρετηρίου σε μορφή JSON
 with open('inverted_index.json', 'w', encoding='utf8') as f:
     json.dump(inverted_index, f, ensure_ascii=False)
 
 # Ερώτημα 4
-app = Flask(__name__)
+# α. Αναπτύξτε μια διεπαφή χρήστη για την αναζήτηση ακαδημαϊκών εργασιών χρησιμοποιώντας την Python (π.χ. μια διεπαφή γραμμής εντολών ή μια απλή διεπαφή ιστού). 
+app = Flask(__name__ , template_folder='templates' )
 
+# Φορτώστε τα δεδομένα και τον αντίστροφο ευρετήριο από τα αρχεία JSON
+with open('data.json', 'r', encoding='utf8') as f:
+    data = json.load(f)
+
+with open('inverted_index.json', 'r', encoding='utf8') as f:
+    inverted_index = json.load(f)
+
+# Υλοποίηση του Boolean retrieval algorithm
+def boolean_retrieval(query, inverted_index):
+    # Αρχικοποίηση του συνόλου αποτελεσμάτων με όλα τα διαθέσιμα έγγραφα
+    results = set(range(len(data)))  # Χρησιμοποιήστε το μέγεθος των δεδομένων, όχι του ευρετηρίου
+    for term in query.split():  # Χωρίστε το query σε λέξεις
+        if term in inverted_index:
+            results &= set(inverted_index[term])
+        else:
+            results = set()
+            break
+    return list(results)
+
+# Υλοποίηση του Vector Space Model (VSM)
+def vector_space_model(query, inverted_index, document_vectors):
+    # Υπολογισμός του σκορ συνάφειας για κάθε έγγραφο
+    scores = defaultdict(float)
+    for term in query.split():  # Χωρίστε το query σε λέξεις
+        if term in inverted_index:
+            doc_ids = inverted_index[term]
+            for doc_id in doc_ids:
+                scores[doc_id] += document_vectors[str(doc_id)].get(term, 0)  # Μετατρέψτε το doc_id σε string
+    # Κατάταξη των εγγράφων με βάση το σκορ συνάφειας
+    ranked_results = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+    return [doc_id for doc_id, score in ranked_results]
+
+# Υλοποίηση του Probabilistic retrieval model (π.χ. Okapi BM25)
+def probabilistic_retrieval(query, inverted_index, document_vectors, k1=1.5, b=0.75):
+    # Υπολογισμός του μέσου μήκους των εγγράφων
+    avg_doc_length = sum(len(document_vectors[str(doc_id)]) for doc_id in document_vectors) / len(document_vectors)
+    # Υπολογισμός του σκορ BM25 για κάθε έγγραφο
+    scores = defaultdict(float)
+    for term in query.split():  # Χωρίστε το query σε λέξεις
+        if term in inverted_index:
+            df = len(inverted_index[term])
+            for doc_id in inverted_index[term]:
+                tf = document_vectors[str(doc_id)].get(term, 0)  # Μετατρέψτε το doc_id σε string
+                doc_length = len(document_vectors[str(doc_id)])
+                # Υπολογισμός των στοιχείων του σκορ BM25
+                idf = math.log((len(document_vectors) - df + 0.5) / (df + 0.5))
+                numerator = tf * (k1 + 1)
+                denominator = tf + k1 * (1 - b + b * doc_length / avg_doc_length)
+                scores[doc_id] += idf * numerator / denominator
+    # Κατάταξη των εγγράφων με βάση το σκορ BM25
+    ranked_results = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+    return [doc_id for doc_id, score in ranked_results]
+
+# Αναπτύξτε τη διεπαφή χρήστη
 @app.route('/', methods=['GET', 'POST'])
-def search():
-    results = []
+def search_interface():
     if request.method == 'POST':
         query = request.form['query']
-        with open('inverted_index.json', 'r', encoding='utf8') as f:
-            inverted_index = json.load(f)
-        with open('processed_data.json', 'r', encoding='utf8') as f:
-            processed_data = json.load(f)
-        for word in query.split():
-            if word in inverted_index:
-                for i in inverted_index[word]:
-                    results.append(processed_data[i])
-    return render_template('search.html', results=results)
-# Υποθέτουμε ότι έχουμε τα επεξεργασμένα δεδομένα από το προηγούμενο παράδειγμα
-processed_data = [
-    {'title': ['sample', 'title'], 'author': ['sample', 'author'], 'date': '2022-01-01', 'abstract': ['sample', 'abstract']},
-    # Προσθέστε τα υπόλοιπα επεξεργασμένα δεδομένα εδώ...
-]
+        filter_date = request.form.get('filter_date')
+        filter_author = request.form.get('filter_author')
+        
+        # Εκτελέστε την αναζήτηση με βάση το ερώτημα και τα φίλτρα
+        results = boolean_retrieval(query, inverted_index)  # Προσθέστε το inverted_index
+        
+        # Φιλτράρετε τα αποτελέσματα με βάση την ημερομηνία και τον συγγραφέα
+        if filter_date or filter_author:
+            filtered_results = []
+            for r in results:
+                doc = data[str(r)]  # Χρησιμοποιήστε το id για να πάρετε το έγγραφο από τα δεδομένα
+                if filter_date and doc['date'] != filter_date:
+                    continue
+                if filter_author and filter_author.lower() not in doc['author'].lower():
+                    continue
+                filtered_results.append(doc)
+            results = filtered_results
+        
+        return render_template('results.html', results=results)
+    else:
+        return render_template('search.html')
 
-# Λίστα με τα ερωτήματα των χρηστών
-user_queries = ["sample query 1", "sample query 2"]
-
-# Υλοποίηση του αλγορίθμου Boolean retrieval
-def boolean_retrieval(query, data):
-    results = []
-    for idx, entry in enumerate(data):
-        if any(term in entry['title'] or term in entry['abstract'] for term in query.split()):
-            results.append(idx)
-    return results
-
-# Υλοποίηση του αλγορίθμου Vector Space Model (VSM)
-def vsm_retrieval(query, data):
-    vectorizer = TfidfVectorizer()
-    documents = [' '.join(entry['title'] + entry['abstract']) for entry in data]
-    tfidf_matrix = vectorizer.fit_transform(documents)
-    query_vector = vectorizer.transform([query])
-    cosine_similarities = cosine_similarity(query_vector, tfidf_matrix).flatten()
-    results = np.argsort(cosine_similarities)[::-1]
-    return results
-
-# Υλοποίηση του αλγορίθμου Okapi BM25
-def bm25_retrieval(query, data):
-    tokenized_data = [' '.join(entry['title'] + entry['abstract']) for entry in data]
-    tokenized_query = query.split()
-    
-    vectorizer = CountVectorizer()
-    X = vectorizer.fit_transform(tokenized_data)
-    tfidf_transformer = TfidfTransformer(smooth_idf=True, use_idf=True)
-    tfidf_matrix = tfidf_transformer.fit_transform(X)
-
-    bm25 = BM25Okapi(tokenized_data)
-    scores = bm25.get_scores(tokenized_query)
-
-    results = np.argsort(scores)[::-1]
-    return results
-
-# Εφαρμογή των αλγορίθμων για κάθε ερώτημα του χρήστη
-for query in user_queries:
-    print(f"\nUser Query: {query}")
-    
-    # Boolean retrieval
-    boolean_results = boolean_retrieval(query, processed_data)
-    print(f"Boolean Retrieval Results: {boolean_results}")
-
-    # Vector Space Model (VSM)
-    vsm_results = vsm_retrieval(query, processed_data)
-    print(f"VSM Results: {vsm_results}")
-
-    # Okapi BM25
-    bm25_results = bm25_retrieval(query, processed_data)
-    print(f"BM25 Results: {bm25_results}")
-
-
-
-
-
-
+if __name__ == '__main__':
+    app.run(debug=True)
 
