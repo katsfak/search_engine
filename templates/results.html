@@ -2,6 +2,7 @@
 <html lang="el">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Αποτελέσματα Αναζήτησης</title>
 </head>
 <body>
@@ -10,10 +11,12 @@
         <ul>
             {% for result in results %}
                 <li>
-                    <h2>{{ result['title'] }}</h2>
-                    <p>Συγγραφέας: {{ result['author'] }}</p>
-                    <p>Ημερομηνία: {{ result['date'] }}</p>
-                    <p>Περίληψη: {{ result['abstract'] }}</p>
+                    <article>
+                        <h2>{{ result['title'] }}</h2>
+                        <p>Συγγραφέας: {{ result['author'] }}</p>
+                        <p>Ημερομηνία: {{ result['date'] }}</p>
+                        <p>Περίληψη: {{ result['abstract'] }}</p>
+                    </article>
                 </li>
             {% endfor %}
         </ul>

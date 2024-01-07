@@ -119,15 +119,31 @@ with open('inverted_index.json', 'r', encoding='utf8') as f:
 
 # Υλοποίηση του Boolean retrieval algorithm
 def boolean_retrieval(query, inverted_index):
-    # Αρχικοποίηση του συνόλου αποτελεσμάτων με όλα τα διαθέσιμα έγγραφα
-    results = set(range(len(data)))  # Χρησιμοποιήστε το μέγεθος των δεδομένων, όχι του ευρετηρίου
-    for term in query.split():  # Χωρίστε το query σε λέξεις
+    """
+    Perform a boolean retrieval operation.
+    
+    Parameters:
+    query (str): The query terms.
+    inverted_index (dict): The inverted index data structure.
+
+    Returns:
+    list: A list of document IDs that match the query.
+    """
+    # Initialize the result set with all available documents
+    # Use the size of the data, not the index
+    results = set(range(len(data)))  
+
+    # Split the query into terms
+    for term in query.split():  
         if term in inverted_index:
             results &= set(inverted_index[term])
         else:
+            # If a term is not in the index, the result is an empty set
             results = set()
             break
+
     return list(results)
+
 
 # Υλοποίηση του Vector Space Model (VSM)
 def vector_space_model(query, inverted_index, document_vectors):
@@ -167,28 +183,36 @@ def probabilistic_retrieval(query, inverted_index, document_vectors, k1=1.5, b=0
 @app.route('/', methods=['GET', 'POST'])
 def search_interface():
     if request.method == 'POST':
-        query = request.form['query']
+        query = request.form.get('query')
         filter_date = request.form.get('filter_date')
         filter_author = request.form.get('filter_author')
-        
-        # Εκτελέστε την αναζήτηση με βάση το ερώτημα και τα φίλτρα
-        results = boolean_retrieval(query, inverted_index)  # Προσθέστε το inverted_index
-        
-        # Φιλτράρετε τα αποτελέσματα με βάση την ημερομηνία και τον συγγραφέα
+
+        # Perform the search based on the query and filters
+        try:
+            results = boolean_retrieval(query, inverted_index)  # Add the inverted_index
+        except Exception as e:
+            return render_template('error.html', error=str(e))
+
+        # Filter the results based on the date and author
         if filter_date or filter_author:
-            filtered_results = []
-            for r in results:
-                doc = data[str(r)]  # Χρησιμοποιήστε το id για να πάρετε το έγγραφο από τα δεδομένα
-                if filter_date and doc['date'] != filter_date:
-                    continue
-                if filter_author and filter_author.lower() not in doc['author'].lower():
-                    continue
-                filtered_results.append(doc)
-            results = filtered_results
-        
+            results = filter_results(results, filter_date, filter_author)
+
         return render_template('results.html', results=results)
     else:
         return render_template('search.html')
+
+
+def filter_results(results, filter_date, filter_author):
+    filtered_results = []
+    for r in results:
+        doc = data[str(r)]  # Use the id to get the document from the data
+        if filter_date and doc['date'] != filter_date:
+            continue
+        if filter_author and filter_author.lower() not in doc['author'].lower():
+            continue
+        filtered_results.append(doc)
+    return filtered_results
+
 
 if __name__ == '__main__':
     app.run(debug=True)
