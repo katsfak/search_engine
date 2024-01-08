@@ -73,8 +73,6 @@ def preprocess_text():
     with open('processed_data.json', 'w', encoding='utf8') as f:
         json.dump(processed_data, f, ensure_ascii=False)
 
-
-
 # Ερώτημα 3
 # α. Δημιουργήστε μια ανεστραμμένη δομή δεδομένων ευρετηρίου (inverted index) για την αποτελεσματική αντιστοίχιση όρων στα έγγραφα στα οποία εμφανίζονται. 
 # Δημιουργία ενός ανεστραμμένου ευρετηρίου
