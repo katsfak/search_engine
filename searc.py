@@ -42,10 +42,6 @@ def scrape_polynoe():
     with open('data.json', 'w', encoding='utf8') as f:
         json.dump(data, f, ensure_ascii=False)
 
-# Καλέστε τη συνάρτηση
-scrape_polynoe()
-
-
 # Ερώτημα 2
 # Κάντε προεπεξεργασία του κειμενικού περιεχομένου των ακαδημαϊκών εργασιών για την προετοιμασία τους για ευρετηρίαση και αναζήτηση. Αυτό μπορεί να περιλαμβάνει εργασίες όπως tokenization, stemming/lemmatization και stop-word removal και αφαίρεση ειδικών χαρακτήρων (removing special characters).
 # Φορτώστε τις stop words
@@ -58,26 +54,26 @@ def preprocess_text():
         data = json.load(f)
     processed_data = []
     for entry in data:
-        title_tokens = word_tokenize(entry['title'])
+        title_tokens = word_tokenize(entry[0])
         title_tokens = [word.lower() for word in title_tokens if word.isalpha() and word.lower() not in stop_words]
         title_tokens = [stemmer.stem(word) for word in title_tokens]
-        author_tokens = word_tokenize(entry['author'])
+        author_tokens = word_tokenize(entry[1])
         author_tokens = [word.lower() for word in author_tokens if word.isalpha() and word.lower() not in stop_words]
         author_tokens = [stemmer.stem(word) for word in author_tokens]
-        abstract_tokens = word_tokenize(entry['abstract'])
+        abstract_tokens = word_tokenize(entry[3])
         abstract_tokens = [word.lower() for word in abstract_tokens if word.isalpha() and word.lower() not in stop_words]
         abstract_tokens = [stemmer.stem(word) for word in abstract_tokens]
 
         processed_data.append({
             'title': title_tokens,
             'author': author_tokens,
-            'date': entry['date'],
+            'date': entry[2],
             'abstract': abstract_tokens
         })
     with open('processed_data.json', 'w', encoding='utf8') as f:
         json.dump(processed_data, f, ensure_ascii=False)
 
-preprocess_text()
+
 
 # Ερώτημα 3
 # α. Δημιουργήστε μια ανεστραμμένη δομή δεδομένων ευρετηρίου (inverted index) για την αποτελεσματική αντιστοίχιση όρων στα έγγραφα στα οποία εμφανίζονται. 
@@ -97,6 +93,8 @@ def create_inverted_index():
     with open('inverted_index.json', 'w', encoding='utf8') as f:
         json.dump(inverted_index, f, ensure_ascii=False)
 
+scrape_polynoe()
+preprocess_text()
 create_inverted_index()
 
 # Ερώτημα 4
