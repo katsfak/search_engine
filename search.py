@@ -6,7 +6,6 @@ from bs4 import BeautifulSoup
 import json
 import nltk
 nltk.download('stopwords')
-nltk.download('punkt')
 from collections import defaultdict
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
@@ -21,6 +20,11 @@ from sklearn.metrics.pairwise import cosine_similarity
 from rank_bm25 import BM25Okapi
 import string
 import numpy as np
+import json
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import PorterStemmer, WordNetLemmatizer
 
 
 # Ερώτημα 1
@@ -54,22 +58,31 @@ def scrape_polynoe():
         
 def preprocess_text():
     nltk.download('stopwords')
+    nltk.download('wordnet')
+
     stop_words = set(stopwords.words('greek'))  # Define stop_words
     stemmer = PorterStemmer()  # Define stemmer
+    lemmatizer = WordNetLemmatizer()  # Define lemmatizer
 
     with open('data.json', 'r', encoding='utf8') as f:
         data = json.load(f)
+
     processed_data = []
     for entry in data:
         title_tokens = word_tokenize(entry[0])
         title_tokens = [word.lower() for word in title_tokens if word.isalpha() and word.lower() not in stop_words]
         title_tokens = [stemmer.stem(word) for word in title_tokens]
+        title_tokens = [lemmatizer.lemmatize(word) for word in title_tokens]
+
         author_tokens = word_tokenize(entry[1])
         author_tokens = [word.lower() for word in author_tokens if word.isalpha() and word.lower() not in stop_words]
         author_tokens = [stemmer.stem(word) for word in author_tokens]
+        author_tokens = [lemmatizer.lemmatize(word) for word in author_tokens]
+
         abstract_tokens = word_tokenize(entry[3])
         abstract_tokens = [word.lower() for word in abstract_tokens if word.isalpha() and word.lower() not in stop_words]
         abstract_tokens = [stemmer.stem(word) for word in abstract_tokens]
+        abstract_tokens = [lemmatizer.lemmatize(word) for word in abstract_tokens]
 
         processed_data.append({
             'title': title_tokens,
@@ -77,6 +90,7 @@ def preprocess_text():
             'date': entry[2],
             'abstract': abstract_tokens
         })
+
     with open('processed_data.json', 'w', encoding='utf8') as f:
         json.dump(processed_data, f, ensure_ascii=False)
 
@@ -166,8 +180,9 @@ def okapibm25(k1=1.5, b=0.75):
 def filter_results(criteria, value):
     with open('processed_data.json', 'r', encoding='utf8') as f:
         data = json.load(f)
-    filtered_data = [doc for doc in data if doc[criteria] == value]
+    filtered_data = [doc for doc in data if doc.get(criteria) == value]
     return filtered_data
+
 
 # Επεξεργασία ερωτήματος (Query Processing): Αναπτύξτε ένα module επεξεργασίας 
 # ερωτημάτων που θα προεπεξεργάζεται τα ερωτήματα που λαμβάνει από τον χρήστη, τα αναλύει 
@@ -207,7 +222,7 @@ def rank_results(query, documents):
     return ranked_docs
 
 if __name__ == "__main__":
-    title = input("Παρακαλώ εισάγετε τον τίτλο: ")
+    #title = input("Παρακαλώ εισάγετε τον τίτλο: ")
     scrape_polynoe()
     preprocess_text()
     create_inverted_index()
