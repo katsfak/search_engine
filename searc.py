@@ -81,10 +81,6 @@ def create_inverted_index():
         data = json.load(f)
     inverted_index = defaultdict(set)
     for i, entry in enumerate(data):
-        for word in entry['title']:
-            inverted_index[word].add(i)
-        for word in entry['author']:
-            inverted_index[word].add(i)
         for word in entry['abstract']:
             inverted_index[word].add(i)
     inverted_index = {k: list(v) for k, v in inverted_index.items()}
