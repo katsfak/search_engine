@@ -114,7 +114,7 @@ def create_inverted_index():
 # Ερώτημα 4
 # α. Αναπτύξτε μια διεπαφή χρήστη για την αναζήτηση ακαδημαϊκών εργασιών χρησιμοποιώντας την Python (π.χ. μια διεπαφή γραμμής εντολών ή μια απλή διεπαφή ιστού). 
 
-def search(title):
+def search():
     print("Please choose an algorithm:")
     print("1. Boolean Retrieval")
     print("2. Vector Space Model")
@@ -126,10 +126,13 @@ def search(title):
         documents = json.load(f)
 
     if choice == 1:
+        title = input("Παρακαλώ εισάγετε τον τίτλο: ")
         result = boolean_retrieval(title, documents)
     elif choice == 2:
+        title = input("Παρακαλώ εισάγετε τον τίτλο: ")
         result = vector_space_model(documents, title)
     elif choice == 3:
+        title = input("Παρακαλώ εισάγετε τον τίτλο: ")
         result = okapibm25()
     else:
         print("Invalid choice. Please enter a number between 1 and 3.")
@@ -222,8 +225,7 @@ def rank_results(query, documents):
     return ranked_docs
 
 if __name__ == "__main__":
-    #title = input("Παρακαλώ εισάγετε τον τίτλο: ")
     scrape_polynoe()
     preprocess_text()
     create_inverted_index()
-    #search()
+    search()
