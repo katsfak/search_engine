@@ -25,7 +25,11 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer, WordNetLemmatizer
-
+import json
+import math
+import numpy as np
+from collections import Counter
+from sklearn.feature_extraction.text import CountVectorizer
 
 # Ερώτημα 1
 # a Επιλέξτε έναν ιστότοπο-στόχο ή ένα αποθετήριο ακαδημαϊκών εργασιών (π.χ. arXiv, PubMed ή αποθετήριο πανεπιστημίου). 
@@ -155,26 +159,57 @@ def boolean_retrieval(query):
         relevant_docs.intersection_update(inverted_index.get(token, []))
     return list(relevant_docs)
 
-def vector_space_model(query, documents):
-    vectorizer = TfidfVectorizer()
-    doc_vectors = vectorizer.fit_transform(documents)
-    query_vector = vectorizer.transform([query])
-    similarities = cosine_similarity(query_vector, doc_vectors)
-    return similarities[0]
+def vector_space_model(query):
+    # Φόρτωση του TF-IDF Vectorizer
+    vectorizerX = TfidfVectorizer()
+
+    with open('processed_data.json', 'r', encoding='utf8') as f:
+            data = json.load(f)
+    documents = [' '.join(doc['abstract']) for doc in data]
+
+    # Εκπαίδευση του vectorizer στα κείμενα των εγγράφων
+    doc_vector = vectorizerX.fit_transform(documents)
+
+    # Δημιουργία TF-IDF vector για το query
+    query_vector = vectorizerX.transform([query])
+
+    # Υπολογισμός της ομοιότητας cosine μεταξύ του query και των εγγράφων
+    cosine_similarities = cosine_similarity(doc_vector, query_vector).flatten()
+
+    # Εύρεση των δέκα πιο σχετικών εγγράφων με το query
+    related_docs_indices = cosine_similarities.argsort()[:-10:-1]
+
+    # Εκτύπωση των σχετικών εγγράφων
+    for i in related_docs_indices:
+        data = [documents[i]]
+        print(data)
 
 def okapibm25(k1=1.5, b=0.75):
+    # Φόρτωση των επεξεργασμένων δεδομένων από το αρχείο 'processed_data.json'
     with open('processed_data.json', 'r', encoding='utf8') as f:
         data = json.load(f)
+
+    # Εξαγωγή των abstracts από τα δεδομένα
     documents = [' '.join(doc['abstract']) for doc in data]
+
+    # Δημιουργία ενός CountVectorizer για τον υπολογισμό των διανυσμάτων των εγγράφων
     vectorizer = CountVectorizer()
     doc_vectors = vectorizer.fit_transform(documents).toarray()
+
+    # Υπολογισμός του μέσου μήκους των εγγράφων (avgdl)
     avgdl = np.mean([len(doc) for doc in documents])
+
+    # Υπολογισμός της αντίστροφης συχνότητας εγγράφων (idf)
     idf = np.log((len(documents) - np.count_nonzero(doc_vectors, axis=0) + 0.5) / (np.count_nonzero(doc_vectors, axis=0) + 0.5))
+
+    # Ορισμός της συνάρτησης υπολογισμού του βαθμού ομοιότητας
     def score(query):
         query_vector = vectorizer.transform([query]).toarray()[0]
         dl = len(query.split())
         tf = query_vector / (1 - b + b * dl / avgdl)
         return np.sum(idf * tf * (k1 + 1) / (tf + k1), axis=1)
+
+    # Επιστροφή της συνάρτησης υπολογισμού του βαθμού ομοιότητας
     return score
 
 # γ. Επιτρέψτε στους χρήστες να φιλτράρουν τα αποτελέσματα αναζήτησης με διάφορα 
