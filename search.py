@@ -131,10 +131,10 @@ def search():
 
     if choice == 1:
         title = input("Παρακαλώ εισάγετε τον τίτλο: ")
-        result = boolean_retrieval(title, documents)
+        result = query_processing(title)
     elif choice == 2:
         title = input("Παρακαλώ εισάγετε τον τίτλο: ")
-        result = vector_space_model(documents, title)
+        result = vector_space_model(title)
     elif choice == 3:
         title = input("Παρακαλώ εισάγετε τον τίτλο: ")
         result = okapibm25()
@@ -231,20 +231,34 @@ def filter_results(criteria, value):
 # και NOT). 
 
 def query_processing(query):
+    # Άνοιγμα του αρχείου με το ανεστραμμένο ευρετήριο
     with open('inverted_index.json', 'r', encoding='utf8') as f:
         inverted_index = json.load(f)
+
+    # Διαχωρισμός του ερωτήματος σε tokens
     query_tokens = query.split()
+
+    # Αρχικοποίηση του συνόλου των σχετικών εγγράφων
     relevant_docs = set(inverted_index.get(query_tokens[0], []))
-    for token in query_tokens[1:]:
-        if token.upper() == 'AND':
+
+    # Επεξεργασία των υπόλοιπων tokens του ερωτήματος
+    for i, token in enumerate(query_tokens[1:]):
+        if token.upper() == 'AND' or token.upper() == 'and':
             continue
-        elif token.upper() == 'OR':
-            relevant_docs = relevant_docs.union(inverted_index.get(query_tokens[i+1], []))
-        elif token.upper() == 'NOT':
-            relevant_docs = relevant_docs.difference(inverted_index.get(query_tokens[i+1], []))
+        elif token.upper() == 'OR' or token.upper() == 'or':
+            # Ένωση των σχετικών εγγράφων με τα έγγραφα που αντιστοιχούν στο επόμενο token
+            relevant_docs = relevant_docs.union(inverted_index.get(query_tokens[i+2], []))
+        elif token.upper() == 'NOT' or token.upper() == 'not':
+            # Διαφορά των σχετικών εγγράφων με τα έγγραφα που αντιστοιχούν στο επόμενο token
+            relevant_docs = relevant_docs.difference(inverted_index.get(query_tokens[i+2], []))
         else:
+            # Τομή των σχετικών εγγράφων με τα έγγραφα που αντιστοιχούν στο token
             relevant_docs = relevant_docs.intersection(inverted_index.get(token, []))
+
+    # Επιστροφή της λίστας των σχετικών εγγράφων
     return list(relevant_docs)
+
+
 
 # Κατάταξη αποτελεσμάτων (Ranking): Εφαρμόστε έναν βασικό αλγόριθμο κατάταξης. Μπορείτε 
 # να ξεκινήσετε με έναν απλό αλγόριθμο κατάταξης TF-IDF (Term Frequency-Inverse Document
@@ -263,4 +277,7 @@ if __name__ == "__main__":
     scrape_polynoe()
     preprocess_text()
     create_inverted_index()
-    search()
+    search_query = input("Enter your search query: ")
+    filters = input("Enter your filter: ")
+    query_processing(search_query)
+
