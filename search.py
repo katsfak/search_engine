@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 import json
 import nltk
 nltk.download('stopwords')
+nltk.download('punkt')
 from collections import defaultdict
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
@@ -160,29 +161,35 @@ def boolean_retrieval(query):
     return list(relevant_docs)
 
 def vector_space_model(query):
-    # Φόρτωση του TF-IDF Vectorizer
-    vectorizerX = TfidfVectorizer()
-
+    # Load preprocessed documents from JSON file
     with open('processed_data.json', 'r', encoding='utf8') as f:
-            data = json.load(f)
-    documents = [' '.join(doc['abstract']) for doc in data]
+        documents = json.load(f)
 
-    # Εκπαίδευση του vectorizer στα κείμενα των εγγράφων
-    doc_vector = vectorizerX.fit_transform(documents)
+    # Tokenize the query
+    tokenized_query = word_tokenize(query.lower())
 
-    # Δημιουργία TF-IDF vector για το query
-    query_vector = vectorizerX.transform([query])
+    # Calculate TF-IDF
+    # Convert tokenized documents to text
+    preprocessed_documents = [' '.join(doc['title'] + doc['author'] + doc['abstract'] + [doc['date']]) for doc in documents]  # Combine all fields
+    preprocessed_query = ' '.join(tokenized_query)
 
-    # Υπολογισμός της ομοιότητας cosine μεταξύ του query και των εγγράφων
-    cosine_similarities = cosine_similarity(doc_vector, query_vector).flatten()
+    # Create a TF-IDF vectorizer
+    tfidf_vectorizer = TfidfVectorizer()
+    tfidf_matrix = tfidf_vectorizer.fit_transform(preprocessed_documents)
 
-    # Εύρεση των δέκα πιο σχετικών εγγράφων με το query
-    related_docs_indices = cosine_similarities.argsort()[:-10:-1]
+    # Transform the query into a TF-IDF vector
+    query_vector = tfidf_vectorizer.transform([preprocessed_query])
 
-    # Εκτύπωση των σχετικών εγγράφων
-    for i in related_docs_indices:
-        data = [documents[i]]
-        print(data)
+    # Calculate cosine similarity
+    cosine_similarities = cosine_similarity(query_vector, tfidf_matrix)
+
+    # Rank documents by similarity
+    results = [(documents[i], cosine_similarities[0][i]) for i in range(len(documents))]
+    results.sort(key=lambda x: x[1], reverse=True)
+
+    # Print the top 5 ranked documents
+    for doc, similarity in results[:5]:  
+        print(f"Similarity: {similarity:.2f}\nTitle: {' '.join(doc['title'])}\nAuthor: {' '.join(doc['author'])}\nDate: {doc['date']}\nAbstract: {' '.join(doc['abstract'])}\n")  # Print all fields
 
 def okapibm25(k1=1.5, b=0.75):
     # Φόρτωση των επεξεργασμένων δεδομένων από το αρχείο 'processed_data.json'
@@ -216,11 +223,16 @@ def okapibm25(k1=1.5, b=0.75):
 # κριτήρια, όπως η ημερομηνία δημοσίευσης ή ο συγγραφέας.
 
 def filter_results(criteria, value):
+    # Άνοιγμα του αρχείου με τα επεξεργασμένα δεδομένα
     with open('processed_data.json', 'r', encoding='utf8') as f:
         data = json.load(f)
-    filtered_data = [doc for doc in data if doc.get(criteria) == value]
-    return filtered_data
 
+    # Δημιουργία μιας λίστας με τα έγγραφα που πληρούν το κριτήριο
+    filtered_data = [doc for doc in data if doc.get(criteria) == value]
+    print(filtered_data)
+
+    # Επιστροφή της λίστας με τα φιλτραρισμένα δεδομένα
+    return filtered_data
 
 # Επεξεργασία ερωτήματος (Query Processing): Αναπτύξτε ένα module επεξεργασίας 
 # ερωτημάτων που θα προεπεξεργάζεται τα ερωτήματα που λαμβάνει από τον χρήστη, τα αναλύει 
@@ -230,7 +242,8 @@ def filter_results(criteria, value):
 # ερωτήματα χρηστών τα οποία τα γίνονται tokenized και θα εκτελεί λειτουργίες Boolean (AND, OR
 # και NOT). 
 
-def query_processing(query):
+def query_processing(query,criteria):
+    criteria = criteria
     # Άνοιγμα του αρχείου με το ανεστραμμένο ευρετήριο
     with open('inverted_index.json', 'r', encoding='utf8') as f:
         inverted_index = json.load(f)
@@ -241,24 +254,30 @@ def query_processing(query):
     # Αρχικοποίηση του συνόλου των σχετικών εγγράφων
     relevant_docs = set(inverted_index.get(query_tokens[0], []))
 
+    # Αρχικοποίηση της λίστας των φιλτραρισμένων δεδομένων
+    filtered_data = []
     # Επεξεργασία των υπόλοιπων tokens του ερωτήματος
-    for i, token in enumerate(query_tokens[1:]):
+    for token in enumerate(query_tokens[1:]):
         if token.upper() == 'AND' or token.upper() == 'and':
             continue
         elif token.upper() == 'OR' or token.upper() == 'or':
             # Ένωση των σχετικών εγγράφων με τα έγγραφα που αντιστοιχούν στο επόμενο token
-            relevant_docs = relevant_docs.union(inverted_index.get(query_tokens[i+2], []))
+            relevant_docs = relevant_docs.union(inverted_index.get(query_tokens[token+1], []))
         elif token.upper() == 'NOT' or token.upper() == 'not':
             # Διαφορά των σχετικών εγγράφων με τα έγγραφα που αντιστοιχούν στο επόμενο token
-            relevant_docs = relevant_docs.difference(inverted_index.get(query_tokens[i+2], []))
+            relevant_docs = relevant_docs.difference(inverted_index.get(query_tokens[token+1], []))
         else:
             # Τομή των σχετικών εγγράφων με τα έγγραφα που αντιστοιχούν στο token
             relevant_docs = relevant_docs.intersection(inverted_index.get(token, []))
 
     # Επιστροφή της λίστας των σχετικών εγγράφων
-    return list(relevant_docs)
+    relevant_docs = list(relevant_docs)
 
+    # Κλήση της συνάρτησης filter_results για κάθε σχετικό έγγραφο
+    for doc in relevant_docs:
+        filtered_data = filter_results(criteria, doc)
 
+    return filtered_data
 
 # Κατάταξη αποτελεσμάτων (Ranking): Εφαρμόστε έναν βασικό αλγόριθμο κατάταξης. Μπορείτε 
 # να ξεκινήσετε με έναν απλό αλγόριθμο κατάταξης TF-IDF (Term Frequency-Inverse Document
@@ -279,5 +298,5 @@ if __name__ == "__main__":
     create_inverted_index()
     search_query = input("Enter your search query: ")
     filters = input("Enter your filter: ")
-    query_processing(search_query)
+    print(vector_space_model(search_query))
 
