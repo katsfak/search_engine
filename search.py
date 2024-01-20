@@ -191,33 +191,31 @@ def vector_space_model(query):
     for doc, similarity in results[:5]:  
         print(f"Similarity: {similarity:.2f}\nTitle: {' '.join(doc['title'])}\nAuthor: {' '.join(doc['author'])}\nDate: {doc['date']}\nAbstract: {' '.join(doc['abstract'])}\n")  # Print all fields
 
-def okapibm25(k1=1.5, b=0.75):
-    # Φόρτωση των επεξεργασμένων δεδομένων από το αρχείο 'processed_data.json'
+def okapibm25(query):
+    # Load preprocessed documents from JSON file
     with open('processed_data.json', 'r', encoding='utf8') as f:
-        data = json.load(f)
+        documents = json.load(f)
 
-    # Εξαγωγή των abstracts από τα δεδομένα
-    documents = [' '.join(doc['abstract']) for doc in data]
+    # Tokenize the query
+    tokenized_query = query.split(" ")
 
-    # Δημιουργία ενός CountVectorizer για τον υπολογισμό των διανυσμάτων των εγγράφων
-    vectorizer = CountVectorizer()
-    doc_vectors = vectorizer.fit_transform(documents).toarray()
+    # Convert tokenized documents to text
+    preprocessed_documents = [' '.join(doc['title'] + doc['author'] + doc['abstract'] + [doc['date']]) for doc in documents]  # Combine all fields
 
-    # Υπολογισμός του μέσου μήκους των εγγράφων (avgdl)
-    avgdl = np.mean([len(doc) for doc in documents])
+    # Initialize BM25Okapi model
+    bm25 = BM25Okapi(preprocessed_documents)
 
-    # Υπολογισμός της αντίστροφης συχνότητας εγγράφων (idf)
-    idf = np.log((len(documents) - np.count_nonzero(doc_vectors, axis=0) + 0.5) / (np.count_nonzero(doc_vectors, axis=0) + 0.5))
+    # Get scores for each document
+    doc_scores = bm25.get_scores(tokenized_query)
 
-    # Ορισμός της συνάρτησης υπολογισμού του βαθμού ομοιότητας
-    def score(query):
-        query_vector = vectorizer.transform([query]).toarray()[0]
-        dl = len(query.split())
-        tf = query_vector / (1 - b + b * dl / avgdl)
-        return np.sum(idf * tf * (k1 + 1) / (tf + k1), axis=1)
+    # Get the indices of the top 5 documents
+    top_indices = bm25.get_top_n(tokenized_query, range(len(preprocessed_documents)), n=5)
 
-    # Επιστροφή της συνάρτησης υπολογισμού του βαθμού ομοιότητας
-    return score
+    # Print the top 5 documents
+    for idx in top_indices:
+        doc = documents[idx]
+        score = doc_scores[idx]
+        print(f"Similarity: {score:.2f}\nTitle: {doc['title']}\nAuthor: {doc['author']}\nDate: {doc['date']}\nAbstract: {doc['abstract']}\n")
 
 # γ. Επιτρέψτε στους χρήστες να φιλτράρουν τα αποτελέσματα αναζήτησης με διάφορα 
 # κριτήρια, όπως η ημερομηνία δημοσίευσης ή ο συγγραφέας.
@@ -298,5 +296,4 @@ if __name__ == "__main__":
     create_inverted_index()
     search_query = input("Enter your search query: ")
     filters = input("Enter your filter: ")
-    print(vector_space_model(search_query))
 
