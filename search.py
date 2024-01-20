@@ -150,15 +150,45 @@ def search():
 # Vector Space Model (VSM) και Probabilistic retrieval models (π.χ. Okapi BM25) για να 
 # ανακτήσετε σχετικές εργασίες με βάση τα ερωτήματα των χρηστών. Ο χρήστης θα μπορεί 
 # να επιλέγει τον αλγόριθμο ανάκτησης.
-        
+
 def boolean_retrieval(query):
     with open('inverted_index.json', 'r', encoding='utf8') as f:
         inverted_index = json.load(f)
+
     query_tokens = query.split()
-    relevant_docs = set(inverted_index.get(query_tokens[0], []))
-    for token in query_tokens[1:]:
-        relevant_docs.intersection_update(inverted_index.get(token, []))
-    return list(relevant_docs)
+    stack = []
+    operators = set(['AND', 'OR', 'NOT'])
+    
+    for token in query_tokens:
+        if token not in operators:
+            # If the token is not an operator, retrieve the relevant documents
+            stack.append(set(inverted_index.get(token, [])))
+        else:
+            # If the token is an operator, perform the corresponding operation
+            if token == 'AND':
+                operand2 = stack.pop()
+                operand1 = stack.pop()
+                result = operand1.intersection(operand2)
+                stack.append(result)
+            elif token == 'OR':
+                operand2 = stack.pop()
+                operand1 = stack.pop()
+                result = operand1.union(operand2)
+                stack.append(result)
+            elif token == 'NOT':
+                operand = stack.pop()
+                all_docs = set(inverted_index.keys())
+                result = all_docs.difference(operand)
+                stack.append(result)
+
+    # Print the final result if it's on top of the stack
+    if stack:
+        final_result = list(stack[0])
+        for idx in final_result:
+            doc = documents[idx]
+            print(f"Title: {doc['title']}\nAuthor: {doc['author']}\nDate: {doc['date']}\nAbstract: {doc['abstract']}\n")
+    else:
+        print("No results found.")
 
 def vector_space_model(query):
     # Load preprocessed documents from JSON file
@@ -203,20 +233,25 @@ def okapibm25(query):
     preprocessed_documents = [' '.join(doc['title'] + doc['author'] + doc['abstract'] + [doc['date']]) for doc in documents]  # Combine all fields
 
     # Initialize BM25Okapi model
-    bm25 = BM25Okapi(preprocessed_documents)
+    bm25 = BM25Okapi([doc.split(" ") for doc in preprocessed_documents])
 
     # Get scores for each document
     doc_scores = bm25.get_scores(tokenized_query)
 
-    # Get the indices of the top 5 documents
+    # Get the indices of the top documents
     top_indices = bm25.get_top_n(tokenized_query, range(len(preprocessed_documents)), n=5)
 
-    # Print the top 5 documents
-    for idx in top_indices:
-        doc = documents[idx]
-        score = doc_scores[idx]
-        print(f"Similarity: {score:.2f}\nTitle: {doc['title']}\nAuthor: {doc['author']}\nDate: {doc['date']}\nAbstract: {doc['abstract']}\n")
+    # Print the details of the top documents
+    for index in top_indices:
+        print(f"Similarity Score: {doc_scores[index]}")
+        print(f"Title: {documents[index]['title']}")
+        print(f"Author: {documents[index]['author']}")
+        print(f"Abstract: {documents[index]['abstract']}")
+        print(f"Date: {documents[index]['date']}")
+        print("\n")
 
+
+    
 # γ. Επιτρέψτε στους χρήστες να φιλτράρουν τα αποτελέσματα αναζήτησης με διάφορα 
 # κριτήρια, όπως η ημερομηνία δημοσίευσης ή ο συγγραφέας.
 
@@ -296,4 +331,5 @@ if __name__ == "__main__":
     create_inverted_index()
     search_query = input("Enter your search query: ")
     filters = input("Enter your filter: ")
+    print(okapibm25(search_query))
 
