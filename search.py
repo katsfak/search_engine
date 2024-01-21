@@ -113,9 +113,9 @@ def search(search_query):
     if choice == 1:
         print(boolean_retrieval(search_query))
     elif choice == 2:
-        print(vector_space_model(search_query))
+        print(ranking(search_query,'vectorspacemodel'))
     elif choice == 3:
-        print(okapibm25(search_query))
+        print(ranking(search_query,'okapibm25'))
     else:
         print("Invalid choice. Please enter a number between 1 and 3.")
         return
@@ -177,9 +177,9 @@ def vector_space_model(query):
     results.sort(key=lambda x: x[1], reverse=True)
 
     # Print the top 5 ranked documents
-    for doc, similarity in results[:5]:  
-        print(f"Similarity: {similarity:.2f}\nTitle: {' '.join(doc['title'])}\nAuthor: {' '.join(doc['author'])}\nDate: {doc['date']}\nAbstract: {' '.join(doc['abstract'])}\n")  # Print all fields
-
+    # for doc, similarity in results[:5]:  
+    #     print(f"Similarity: {similarity:.2f}\nTitle: {' '.join(doc['title'])}\nAuthor: {' '.join(doc['author'])}\nDate: {doc['date']}\nAbstract: {' '.join(doc['abstract'])}\n")  # Print all fields
+    return results
 
 def okapibm25(query):
     # Load preprocessed documents from JSON file
@@ -201,16 +201,20 @@ def okapibm25(query):
     # Get the indices of the top documents
     top_indices = bm25.get_top_n(tokenized_query, range(len(preprocessed_documents)), n=5)
 
-    # Print the details of the top documents
-    for index in top_indices:
-        print(f"Similarity Score: {doc_scores[index]}")
-        print(f"Title: {documents[index]['title']}")
-        print(f"Author: {documents[index]['author']}")
-        print(f"Abstract: {documents[index]['abstract']}")
-        print(f"Date: {documents[index]['date']}")
-        print("\n")
-   
-    
+    # # Print the details of the top documents
+    # for index in top_indices:
+    #     print(f"Similarity Score: {doc_scores[index]}")
+    #     print(f"Title: {documents[index]['title']}")
+    #     print(f"Author: {documents[index]['author']}")
+    #     print(f"Abstract: {documents[index]['abstract']}")
+    #     print(f"Date: {documents[index]['date']}")
+    #     print("\n")
+    results = [(documents[i], doc_scores[i]) for i in top_indices]
+    results.sort(key=lambda x: x[1], reverse=True)
+
+    return results
+
+
 # γ. Επιτρέψτε στους χρήστες να φιλτράρουν τα αποτελέσματα αναζήτησης με διάφορα 
 # κριτήρια, όπως η ημερομηνία δημοσίευσης ή ο συγγραφέας.
 
@@ -255,13 +259,15 @@ def query_processing(query):
 # Frequency) και αργότερα μπορείτε να συμπεριλάβετε πιο προηγμένες τεχνικές κατάταξης. 
 # Ταξινομήστε και παρουσιάστε τα αποτελέσματα αναζήτησης σε φιλική προς το χρήστη μορφή.
 
-def rank_results(query, documents):
-    vectorizer = TfidfVectorizer()
-    doc_vectors = vectorizer.fit_transform(documents)
-    query_vector = vectorizer.transform([query])
-    tfidf_scores = np.dot(doc_vectors, query_vector.T).toarray()
-    ranked_docs = np.argsort(-tfidf_scores, axis=0)
-    return ranked_docs
+def ranking(query, ranking_algorithm):
+    if ranking_algorithm == 'vectorspacemodel':
+        results = vector_space_model(query)
+    elif ranking_algorithm == 'okapibm25':
+        results = okapibm25(query)
+    else:
+        raise ValueError("Unsupported ranking algorithm")
+    for doc, similarity in results[:5]:
+        print(f"Similarity: {similarity:.2f}\nTitle: {' '.join(doc['title'])}\nAuthor: {' '.join(doc['author'])}\nDate: {doc['date']}\nAbstract: {' '.join(doc['abstract'])}\n")
 
 
 
