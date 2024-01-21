@@ -177,11 +177,9 @@ def vector_space_model(query):
     results.sort(key=lambda x: x[1], reverse=True)
 
     # Print the top 5 ranked documents
-    # for doc, similarity in results[:5]:  
-    #     print(f"Similarity: {similarity:.2f}\nTitle: {' '.join(doc['title'])}\nAuthor: {' '.join(doc['author'])}\nDate: {doc['date']}\nAbstract: {' '.join(doc['abstract'])}\n")  # Print all fields
+    for doc, similarity in results[:5]:  
+        print(f"Similarity: {similarity:.2f}\nTitle: {' '.join(doc['title'])}\nAuthor: {' '.join(doc['author'])}\nDate: {doc['date']}\nAbstract: {' '.join(doc['abstract'])}\n")  # Print all fields
 
-    # Return the top 5 ranked documents
-    return results[:5]
 
 def okapibm25(query):
     # Load preprocessed documents from JSON file
@@ -204,17 +202,15 @@ def okapibm25(query):
     top_indices = bm25.get_top_n(tokenized_query, range(len(preprocessed_documents)), n=5)
 
     # Print the details of the top documents
-    # for index in top_indices:
-    #     print(f"Similarity Score: {doc_scores[index]}")
-    #     print(f"Title: {documents[index]['title']}")
-    #     print(f"Author: {documents[index]['author']}")
-    #     print(f"Abstract: {documents[index]['abstract']}")
-    #     print(f"Date: {documents[index]['date']}")
-    #     print("\n")
+    for index in top_indices:
+        print(f"Similarity Score: {doc_scores[index]}")
+        print(f"Title: {documents[index]['title']}")
+        print(f"Author: {documents[index]['author']}")
+        print(f"Abstract: {documents[index]['abstract']}")
+        print(f"Date: {documents[index]['date']}")
+        print("\n")
+   
     
-    return doc_scores, top_indices
-
-
 # γ. Επιτρέψτε στους χρήστες να φιλτράρουν τα αποτελέσματα αναζήτησης με διάφορα 
 # κριτήρια, όπως η ημερομηνία δημοσίευσης ή ο συγγραφέας.
 
