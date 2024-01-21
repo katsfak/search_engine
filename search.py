@@ -219,16 +219,16 @@ def okapibm25(query):
 # κριτήρια, όπως η ημερομηνία δημοσίευσης ή ο συγγραφέας.
 
 def filter_results(criteria, value):
-    # Άνοιγμα του αρχείου με τα επεξεργασμένα δεδομένα
-    with open('processed_data.json', 'r', encoding='utf8') as f:
-        data = json.load(f)
+    # # Άνοιγμα του αρχείου με τα επεξεργασμένα δεδομένα
+    # with open('processed_data.json', 'r', encoding='utf8') as f:
+    #     data = json.load(f)
 
-    # Δημιουργία μιας λίστας με τα έγγραφα που πληρούν το κριτήριο
-    filtered_data = [doc for doc in data if doc.get(criteria) == value]
-    print(filtered_data)
+    # # Δημιουργία μιας λίστας με τα έγγραφα που πληρούν το κριτήριο
+    # filtered_data = [doc for doc in data if doc.get(criteria) == value]
+     print(filtered_data)
 
-    # Επιστροφή της λίστας με τα φιλτραρισμένα δεδομένα
-    return filtered_data
+    # # Επιστροφή της λίστας με τα φιλτραρισμένα δεδομένα
+    # return filtered_data
 
 # Επεξεργασία ερωτήματος (Query Processing): Αναπτύξτε ένα module επεξεργασίας 
 # ερωτημάτων που θα προεπεξεργάζεται τα ερωτήματα που λαμβάνει από τον χρήστη, τα αναλύει 
@@ -266,7 +266,7 @@ def ranking(query, ranking_algorithm):
         results = okapibm25(query)
     else:
         raise ValueError("Unsupported ranking algorithm")
-    for doc, similarity in results[:5]:
+    for doc, similarity in results:
         print(f"Similarity: {similarity:.2f}\nTitle: {' '.join(doc['title'])}\nAuthor: {' '.join(doc['author'])}\nDate: {doc['date']}\nAbstract: {' '.join(doc['abstract'])}\n")
 
 
