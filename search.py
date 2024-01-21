@@ -218,17 +218,17 @@ def okapibm25(query):
 # γ. Επιτρέψτε στους χρήστες να φιλτράρουν τα αποτελέσματα αναζήτησης με διάφορα 
 # κριτήρια, όπως η ημερομηνία δημοσίευσης ή ο συγγραφέας.
 
-def filter_results(criteria, value):
-    # # Άνοιγμα του αρχείου με τα επεξεργασμένα δεδομένα
-    # with open('processed_data.json', 'r', encoding='utf8') as f:
-    #     data = json.load(f)
+# def filter_results(criteria, value):
+#     # Άνοιγμα του αρχείου με τα επεξεργασμένα δεδομένα
+#     with open('processed_data.json', 'r', encoding='utf8') as f:
+#         data = json.load(f)
 
-    # # Δημιουργία μιας λίστας με τα έγγραφα που πληρούν το κριτήριο
-    # filtered_data = [doc for doc in data if doc.get(criteria) == value]
-     print(filtered_data)
+#     # Δημιουργία μιας λίστας με τα έγγραφα που πληρούν το κριτήριο
+#     filtered_data = [doc for doc in data if doc.get(criteria) == value]
+#         print(filtered_data)
 
-    # # Επιστροφή της λίστας με τα φιλτραρισμένα δεδομένα
-    # return filtered_data
+#     # Επιστροφή της λίστας με τα φιλτραρισμένα δεδομένα
+#     return filtered_data
 
 # Επεξεργασία ερωτήματος (Query Processing): Αναπτύξτε ένα module επεξεργασίας 
 # ερωτημάτων που θα προεπεξεργάζεται τα ερωτήματα που λαμβάνει από τον χρήστη, τα αναλύει 
