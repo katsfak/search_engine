@@ -1,3 +1,19 @@
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     formats: ipynb,py:light
+#     text_representation:
+#       extension: .py
+#       format_name: light
+#       format_version: '1.5'
+#       jupytext_version: 1.16.6
+#   kernelspec:
+#     display_name: Python 3 (ipykernel)
+#     language: python
+#     name: python3
+# ---
+
 # Βιβλιοθήκες
 import requests
 from bs4 import BeautifulSoup
@@ -46,7 +62,7 @@ def scrape_polynoe():
 # Κάντε προεπεξεργασία του κειμενικού περιεχομένου των ακαδημαϊκών εργασιών για την προετοιμασία τους για ευρετηρίαση και αναζήτηση. 
 # Αυτό μπορεί να περιλαμβάνει εργασίες όπως tokenization, stemming/lemmatization και stop-word removal και αφαίρεση ειδικών χαρακτήρων 
 # (removing special characters).
-        
+
 def preprocess_text():
 
     stop_words = set(stopwords.words('greek'))  # Define stop_words
@@ -87,7 +103,7 @@ def preprocess_text():
 # α. Δημιουργήστε μια ανεστραμμένη δομή δεδομένων ευρετηρίου (inverted index) για την αποτελεσματική αντιστοίχιση όρων
 #  στα έγγραφα στα οποία εμφανίζονται. 
 # β. Εφαρμόστε μια δομή δεδομένων για την αποθήκευση του ευρετηρίου.
-        
+
 def create_inverted_index():
     with open('processed_data.json', 'r', encoding='utf8') as f:
         data = json.load(f)
