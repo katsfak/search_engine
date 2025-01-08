@@ -5,6 +5,8 @@ import json
 import nltk
 nltk.download('stopwords')
 nltk.download('punkt')
+nltk.download('punkt_tab')
+nltk.download('wordnet')
 from collections import defaultdict
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
@@ -46,8 +48,6 @@ def scrape_polynoe():
 # (removing special characters).
         
 def preprocess_text():
-    nltk.download('stopwords')
-    nltk.download('wordnet')
 
     stop_words = set(stopwords.words('greek'))  # Define stop_words
     stemmer = PorterStemmer()  # Define stemmer
@@ -239,8 +239,6 @@ def okapibm25(query):
 # και NOT). 
 
 def query_processing(query):
-    nltk.download('stopwords')
-    nltk.download('wordnet')
 
     stop_words = set(stopwords.words('greek'))  # Define stop_words
     stemmer = PorterStemmer()  # Define stemmer
