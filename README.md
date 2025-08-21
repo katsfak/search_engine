@@ -44,7 +44,6 @@ Clone the repo and install dependencies:
 ```bash
 git clone https://github.com/katsfak/search_engine.git
 cd search_engine
-pip install -r requirements.txt
 ```
 
 If requirements library is missing, install manually:  
